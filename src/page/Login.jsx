@@ -1,10 +1,53 @@
-import React from 'react';
-import { Form, Input, Button, Typography, Checkbox, Divider } from 'antd';
-import { LockOutlined, UserOutlined  } from '@ant-design/icons';
+import React, { useEffect } from "react";
+import { Form, Input, Button, Typography, Checkbox } from "antd";
+import { LockOutlined, MailOutlined } from "@ant-design/icons";
+import { login } from "../services/authService";
+import { useNavigate } from "react-router-dom";
+import { useMessage } from "../MessageContext.jsx";
 
 function Login() {
-  const onFinish = (values) => {
-    console.log('Received values of form: ', values);
+  const [form] = Form.useForm();
+  const navigate = useNavigate();
+  const { showMessage } = useMessage();
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      form.setFieldsValue({ email: savedEmail, remember: true });
+    }
+  }, [form]);
+
+  const onFinish = async (values) => {
+    try {
+      const response = await login(values);
+
+      if (response.result) {
+        const userData = {
+          userId: response.result.userId,
+          email: response.result.email,
+        };
+
+        localStorage.setItem("userData", JSON.stringify(userData));
+        localStorage.setItem("token", response.result.token);
+
+        if (values.remember) {
+          localStorage.setItem("rememberedEmail", values.email);
+        } else {
+          localStorage.removeItem("rememberedEmail");
+        }
+
+        showMessage("success", "Đăng nhập thành công!", 2);
+      
+          navigate("/");
+     
+      } else {
+        showMessage("error", "Cấu trúc phản hồi không hợp lệ!", 3);
+        console.error("Invalid response structure:", response);
+      }
+    } catch (error) {
+      showMessage("error", "Đăng nhập thất bại!", 3);
+      console.error("Login error:", error);
+    }
   };
 
   return (
@@ -18,8 +61,9 @@ function Login() {
             Vui lòng nhập thông tin đăng nhập của bạn
           </Typography.Text>
         </div>
-        
+
         <Form
+          form={form}
           name="normal_login"
           initialValues={{ remember: true }}
           onFinish={onFinish}
@@ -27,19 +71,25 @@ function Login() {
           size="large"
         >
           <Form.Item
-            name="username"
-            rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập!' }]}
+            name="email"
+            rules={[
+              {
+                required: true,
+                message: "Vui lòng nhập email!",
+                type: "email",
+              },
+            ]}
           >
             <Input
-              prefix={<UserOutlined className="text-gray-400" />}
-              placeholder="Tên đăng nhập"
+              prefix={<MailOutlined className="text-gray-400" />}
+              placeholder="Email"
               className="rounded-lg"
             />
           </Form.Item>
-          
+
           <Form.Item
             name="password"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+            rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
           >
             <Input.Password
               prefix={<LockOutlined className="text-gray-400" />}
@@ -47,35 +97,34 @@ function Login() {
               className="rounded-lg"
             />
           </Form.Item>
-          
+
           <div className="flex justify-between items-center mb-4">
             <Form.Item name="remember" valuePropName="checked" noStyle>
               <Checkbox>Ghi nhớ đăng nhập</Checkbox>
             </Form.Item>
-           
           </div>
-          
+
           <Form.Item>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+            <Button
+              type="primary"
+              htmlType="submit"
               className="w-full h-10 rounded-lg bg-blue-500 hover:bg-blue-600 border-none"
             >
               Đăng nhập
             </Button>
           </Form.Item>
-          
- 
+
           <div className="text-center mt-6">
             <span className="text-gray-500">Chưa có tài khoản? </span>
-            <a className="text-blue-500 hover:text-blue-600 font-medium" onClick={
-                () => window.location.href = '/register'
-            } >
-        
+            <a
+              className="text-blue-500 hover:text-blue-600 font-medium"
+              onClick={() => (window.location.href = "/register")}
+            >
               Đăng ký ngay
             </a>
           </div>
         </Form>
+
       </div>
     </div>
   );

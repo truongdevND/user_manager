@@ -5,6 +5,7 @@ import Register from "../page/Register";
 import Dashboard from "../page/Dashboard";
 import NotFound from "../page/NotFound";
 // import authMiddleware from "../authMiddleware";
+import VerifyEmail from "../page/VerifyEmail";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -18,6 +19,11 @@ const router = createBrowserRouter([
     path: "/register",
     element: <Register />,
   },
+  {
+    path: "/verify-email",
+    element: <VerifyEmail />,
+  },
+  {},
   {
     path: "*",
     element: <NotFound />,
