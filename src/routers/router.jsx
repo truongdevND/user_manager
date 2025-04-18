@@ -4,12 +4,13 @@ import Login from "../page/Login";
 import Register from "../page/Register";
 import Dashboard from "../page/Dashboard";
 import NotFound from "../page/NotFound";
-// import authMiddleware from "../authMiddleware";
+import authMiddleware from "../authMiddleware";
 import VerifyEmail from "../page/VerifyEmail";
+
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Dashboard />,
+    element: authMiddleware(),
   },
   {
     path: "/login",
@@ -23,7 +24,6 @@ const router = createBrowserRouter([
     path: "/verify-email",
     element: <VerifyEmail />,
   },
-  {},
   {
     path: "*",
     element: <NotFound />,

@@ -9,14 +9,6 @@ export const getUserListPagination = async (params) => {
   }
 };
 
-export const getUserList = async (params) => {
-  try {
-    const response = await getRequest("/user/list", params);
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.message || "Failed to fetch user list");
-  }
-};
 
 export const getUserById = async (userId) => {
   try {
@@ -44,7 +36,6 @@ export const createUser = async (userData) => {
     throw new Error(error.response?.data?.message || "Failed to create user");
   }
 };
-
 export const updateUser = async (userId, userData) => {
   try {
     const response = await putRequest(`/user/update/${userId}`, userData);

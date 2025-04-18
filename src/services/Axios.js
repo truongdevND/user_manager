@@ -23,13 +23,7 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     console.log(error);
-    if (
-      error?.response?.data?.code === 1009 ||
-      error?.response?.data?.code === 1007
-    ) {
-      localStorage.removeItem("token");
-      window.location.href = "/";
-    }
+  
     return Promise.reject(error);
   }
 );

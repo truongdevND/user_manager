@@ -19,27 +19,26 @@ function Login() {
 
   const onFinish = async (values) => {
     try {
-      const response = await login(values);
-
-      if (response.result) {
-        const userData = {
-          userId: response.result.userId,
-          email: response.result.email,
-        };
-
-        localStorage.setItem("userData", JSON.stringify(userData));
-        localStorage.setItem("token", response.result.token);
-
-        if (values.remember) {
-          localStorage.setItem("rememberedEmail", values.email);
-        } else {
-          localStorage.removeItem("rememberedEmail");
-        }
-
+      const { remember, ...loginValues } = values;
+      const response = await login(loginValues);
+  
+      if (response?.result) {
+        const { userId, email, token } = response.result;
+  
+        // Lưu userData và token
+        localStorage.setItem("userData", JSON.stringify({ userId, email }));
+        localStorage.setItem("token", token);
+  
+        // Ghi nhớ email nếu người dùng chọn "Remember me"
+        remember
+          ? localStorage.setItem("rememberedEmail", email)
+          : localStorage.removeItem("rememberedEmail");
+  
         showMessage("success", "Đăng nhập thành công!", 2);
-      
-          navigate("/");
-     
+  
+        // Delay ngắn đảm bảo localStorage lưu xong rồi mới navigate
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        navigate("/");
       } else {
         showMessage("error", "Cấu trúc phản hồi không hợp lệ!", 3);
         console.error("Invalid response structure:", response);
@@ -49,6 +48,7 @@ function Login() {
       console.error("Login error:", error);
     }
   };
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-50 to-indigo-100">
@@ -99,7 +99,7 @@ function Login() {
           </Form.Item>
 
           <div className="flex justify-between items-center mb-4">
-            <Form.Item name="remember" valuePropName="checked" noStyle>
+            <Form.Item name="remember" noStyle>
               <Checkbox>Ghi nhớ đăng nhập</Checkbox>
             </Form.Item>
           </div>

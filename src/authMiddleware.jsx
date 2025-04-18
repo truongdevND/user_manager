@@ -1,27 +1,15 @@
-import { Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import Dashboard from "./page/Dashboard";
 
-const authMiddleware = (WrappedComponent) => {
-  const ComponentWithAuth = (props) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(null);
+const authMiddleware = () => {
+  const token = localStorage.getItem("token");
 
-    useEffect(() => {
-      const token = localStorage.getItem('token');
-      setIsAuthenticated(!!token);
-    }, []);
-
-    if (isAuthenticated === null) {
-      return null; 
-    }
-
-    return isAuthenticated ? (
-      <WrappedComponent {...props} />
-    ) : (
-      <Navigate to="/login" replace />
-    );
-  };
-
-  return ComponentWithAuth;
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+ 
+  return <Dashboard />;
 };
 
 export default authMiddleware;

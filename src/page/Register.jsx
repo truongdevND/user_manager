@@ -35,7 +35,7 @@ function Register() {
         fullName: values.fullName,
         dob: values.dob ? values.dob.format("YYYY-MM-DD") : null,
         phone: values.phone,
-        roleNames: ["user"],
+        roleNames: ["admin"],
       };
       
       await register(payload);
