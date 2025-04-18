@@ -4,13 +4,12 @@ import Login from "../page/Login";
 import Register from "../page/Register";
 import Dashboard from "../page/Dashboard";
 import NotFound from "../page/NotFound";
-import authMiddleware from "../authMiddleware";
 import VerifyEmail from "../page/VerifyEmail";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: authMiddleware(),
+    element: <Dashboard />,
   },
   {
     path: "/login",

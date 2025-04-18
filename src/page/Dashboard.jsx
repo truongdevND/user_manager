@@ -38,6 +38,7 @@ import {
 } from "../services/userService";
 import UserForm from "../components/UserForm";
 import debounce from "lodash/debounce";
+import { logoutUser } from "../services/authService";
 // Import history for navigation if using react-router
 // import { useHistory } from "react-router-dom";
 
@@ -47,7 +48,7 @@ const { confirm } = Modal;
 
 const Dashboard = () => {
   // const history = useHistory(); // Uncomment if using react-router
-  
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -69,7 +70,7 @@ const Dashboard = () => {
   });
   const [userFormVisible, setUserFormVisible] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  
+
   // Add flag to prevent multiple redirects if auth fails
   const [isAuthError, setIsAuthError] = useState(false);
 
@@ -77,17 +78,17 @@ const Dashboard = () => {
   const handleAuthError = (error) => {
     // Only handle auth errors once to prevent loops
     if (isAuthError) return;
-    
+
     if (error.response?.status === 403 || error.response?.status === 401) {
       setIsAuthError(true);
       message.error("Phiên đăng nhập hết hạn hoặc không có quyền truy cập");
-      
+
       // Store current location to redirect back after login
       localStorage.setItem("redirectUrl", window.location.pathname);
-      
+
       // Instead of refreshing the page, redirect to login
       // history.push("/login"); // Use this if using react-router
-      
+
       // If not using react-router, redirect after a short delay
       // This prevents continuous refreshes
       setTimeout(() => {
@@ -130,7 +131,7 @@ const Dashboard = () => {
       console.error("Error fetching user info:", error);
       console.error("Status:", error.response?.status);
       console.error("Response data:", error.response?.data);
-      
+
       if (error.response?.status === 403 || error.response?.status === 401) {
         handleAuthError(error);
       } else {
@@ -142,7 +143,7 @@ const Dashboard = () => {
   // Fetch paginated users and update stats with better error handling
   const fetchUsers = async () => {
     if (isAuthError) return; // Prevent API calls if auth has failed
-    
+
     setLoading(true);
     try {
       const params = {
@@ -151,19 +152,23 @@ const Dashboard = () => {
         search: searchText || undefined,
         searchBy: searchedColumn || undefined,
       };
-      
+
       const resp = await getUserListPagination(params);
-      
+
       if (!resp || !resp.result) {
         throw new Error("Invalid response format");
       }
-      
+
       const users = resp.result?.content || [];
       const totalUsers = resp.result?.totalElements || 0;
 
       // Calculate stats based on fetched users
-      const activeUsers = users.filter((user) => !user.isDelete && user.active).length;
-      const inactiveUsers = users.filter((user) => !user.isDelete && !user.active).length;
+      const activeUsers = users.filter(
+        (user) => !user.isDelete && user.active
+      ).length;
+      const inactiveUsers = users.filter(
+        (user) => !user.isDelete && !user.active
+      ).length;
       const lockedUsers = users.filter((user) => user.isDelete).length;
 
       // Update stats
@@ -206,7 +211,7 @@ const Dashboard = () => {
       console.error("Error fetching users:", error);
       console.error("Status:", error.response?.status);
       console.error("Response data:", error.response?.data);
-      
+
       if (error.response?.status === 403 || error.response?.status === 401) {
         handleAuthError(error);
       } else {
@@ -216,10 +221,31 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      const response = await logoutUser(token);
+  
+      if (response) {
+        // Xóa dữ liệu local
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        
+        // Chuyển hướng về trang login
+        window.location.href = "/login";
+      }
+    } catch (error) {
+      console.error("Error logging out:", error);
+      console.error("Status:", error?.response?.status);
+      console.error("Response data:", error?.response?.data);
+    }
+  };
+  
 
   const handleDeleteUser = async (userId) => {
     if (isAuthError) return; // Prevent operations if auth has failed
-    
+
     confirm({
       title: "Xác nhận xóa",
       content: "Bạn có chắc chắn muốn xóa người dùng này?",
@@ -235,11 +261,16 @@ const Dashboard = () => {
         } catch (error) {
           console.error("Error deleting user:", error);
           console.error("Status:", error.response?.status);
-          
-          if (error.response?.status === 403 || error.response?.status === 401) {
+
+          if (
+            error.response?.status === 403 ||
+            error.response?.status === 401
+          ) {
             handleAuthError(error);
           } else {
-            message.error(error.response?.data?.message || "Không thể xóa người dùng");
+            message.error(
+              error.response?.data?.message || "Không thể xóa người dùng"
+            );
           }
         } finally {
           setActionLoading(false);
@@ -249,12 +280,14 @@ const Dashboard = () => {
   };
 
   const handleToggleUserStatus = async (userId, currentStatus) => {
-    if (isAuthError) return; 
-    
+    if (isAuthError) return;
+
     const isActive = currentStatus !== "Hoạt động";
     confirm({
       title: `Xác nhận ${isActive ? "mở khóa" : "khóa"}`,
-      content: `Bạn có chắc chắn muốn ${isActive ? "mở khóa" : "khóa"} người dùng này?`,
+      content: `Bạn có chắc chắn muốn ${
+        isActive ? "mở khóa" : "khóa"
+      } người dùng này?`,
       okText: isActive ? "Mở khóa" : "Khóa",
       okType: isActive ? "primary" : "danger",
       cancelText: "Hủy",
@@ -262,17 +295,23 @@ const Dashboard = () => {
         setActionLoading(true);
         try {
           await updateUser(userId, { active: isActive });
-          message.success(isActive ? "Đã mở khóa người dùng" : "Đã khóa người dùng");
+          message.success(
+            isActive ? "Đã mở khóa người dùng" : "Đã khóa người dùng"
+          );
           fetchUsers();
         } catch (error) {
           console.error("Error updating user status:", error);
           console.error("Status:", error.response?.status);
-          
-          if (error.response?.status === 403 || error.response?.status === 401) {
+
+          if (
+            error.response?.status === 403 ||
+            error.response?.status === 401
+          ) {
             handleAuthError(error);
           } else {
             message.error(
-              error.response?.data?.message || "Không thể cập nhật trạng thái người dùng"
+              error.response?.data?.message ||
+                "Không thể cập nhật trạng thái người dùng"
             );
           }
         } finally {
@@ -287,7 +326,8 @@ const Dashboard = () => {
     setIsAuthError(false);
   }, []);
   useEffect(() => {
-    if (!isAuthError) {  // Only fetch if no auth errors
+    if (!isAuthError) {
+      // Only fetch if no auth errors
       fetchUsers();
     }
   }, [pagination.current, pagination.pageSize, searchText, searchedColumn]);
@@ -338,12 +378,19 @@ const Dashboard = () => {
 
   // Search column props
   const getColumnSearchProps = (dataIndex) => ({
-    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+    filterDropdown: ({
+      setSelectedKeys,
+      selectedKeys,
+      confirm,
+      clearFilters,
+    }) => (
       <div className="p-2" style={{ minWidth: 200 }}>
         <Input
           placeholder={`Tìm kiếm ${dataIndex}`}
           value={selectedKeys[0]}
-          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onChange={(e) =>
+            setSelectedKeys(e.target.value ? [e.target.value] : [])
+          }
           onPressEnter={() => debouncedSearch(selectedKeys, confirm, dataIndex)}
           className="mb-2 block w-full"
         />
@@ -380,7 +427,6 @@ const Dashboard = () => {
   // Table columns
   const columns = useMemo(
     () => [
-     
       {
         title: "Người dùng",
         dataIndex: "name",
@@ -439,7 +485,8 @@ const Dashboard = () => {
         dataIndex: "lastLogin",
         key: "lastLogin",
         sorter: (a, b) =>
-          new Date(a.lastLogin || 0).getTime() - new Date(b.lastLogin || 0).getTime(),
+          new Date(a.lastLogin || 0).getTime() -
+          new Date(b.lastLogin || 0).getTime(),
         sortOrder: sortedInfo.columnKey === "lastLogin" && sortedInfo.order,
       },
       {
@@ -449,8 +496,8 @@ const Dashboard = () => {
           <Dropdown
             overlay={
               <Menu>
-                <Menu.Item 
-                  key="edit" 
+                <Menu.Item
+                  key="edit"
                   icon={<EditOutlined />}
                   onClick={() => showEditUserForm(record.id)}
                 >
@@ -466,15 +513,19 @@ const Dashboard = () => {
                 <Menu.Item
                   key="toggleStatus"
                   icon={
-                    record.status === "Đã khóa" || record.status === "Không hoạt động" ? (
+                    record.status === "Đã khóa" ||
+                    record.status === "Không hoạt động" ? (
                       <UserOutlined />
                     ) : (
                       <UserDeleteOutlined />
                     )
                   }
-                  onClick={() => handleToggleUserStatus(record.id, record.status)}
+                  onClick={() =>
+                    handleToggleUserStatus(record.id, record.status)
+                  }
                 >
-                  {record.status === "Đã khóa" || record.status === "Không hoạt động"
+                  {record.status === "Đã khóa" ||
+                  record.status === "Không hoạt động"
                     ? "Mở khóa"
                     : "Khóa"}
                 </Menu.Item>
@@ -502,7 +553,7 @@ const Dashboard = () => {
       <Menu.Item key="profile" icon={<UserOutlined />}>
         Hồ sơ
       </Menu.Item>
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
+      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={logout}>
         Đăng xuất
       </Menu.Item>
     </Menu>
@@ -512,10 +563,16 @@ const Dashboard = () => {
     <Layout className="min-h-screen">
       <Header className="flex items-center justify-between bg-white px-6 shadow-sm">
         <div className="flex items-center">
-          <div className="text-xl font-bold text-blue-600 mr-8">AdminDashboard</div>
+          <div className="text-xl font-bold text-blue-600 mr-8">
+            AdminDashboard
+          </div>
         </div>
         <div className="flex items-center">
-          <Dropdown overlay={userMenu} placement="bottomRight" trigger={["click"]}>
+          <Dropdown
+            overlay={userMenu}
+            placement="bottomRight"
+            trigger={["click"]}
+          >
             <div className="flex items-center cursor-pointer">
               <Avatar
                 src={userInfo.avatar}
@@ -523,7 +580,9 @@ const Dashboard = () => {
                 className="mr-2"
                 aria-label="Ảnh đại diện người dùng"
               />
-              <span className="hidden md:inline">{userInfo.fullName || "User"}</span>
+              <span className="hidden md:inline">
+                {userInfo.fullName || "User"}
+              </span>
             </div>
           </Dropdown>
         </div>
@@ -612,8 +671,8 @@ const Dashboard = () => {
               >
                 Xóa bộ lọc
               </Button>
-              <Button 
-                onClick={clearAll} 
+              <Button
+                onClick={clearAll}
                 aria-label="Xóa bộ lọc và sắp xếp"
                 disabled={isAuthError}
               >

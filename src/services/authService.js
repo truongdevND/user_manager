@@ -18,9 +18,10 @@ export const register = async (userData) => {
   }
 };
 
-export const logout = async () => {
+
+export const logoutUser = async (token) => {
   try {
-    const response = await postRequest('/auth/logout');
+    const response = await postRequest('/auth/logout',  { token });
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Logout failed');
